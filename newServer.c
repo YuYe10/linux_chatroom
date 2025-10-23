@@ -130,6 +130,20 @@ void connect_db() {
     // 创建在线用户信息表
     table_create(mysql_handle, "chatroom",
                 "create table onlineinfo(userID INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT, userName TEXT, userState TEXT) engine=INNODB auto_increment=1001 default charset=gbk");
+    
+    // 删除username为空的记录
+    char delete_query[1024];
+    sprintf(delete_query, "DELETE FROM usrinfo WHERE userName = '' OR userName IS NULL");
+    if (mysql_real_query(mysql_handle, delete_query, (unsigned int)strlen(delete_query)) != 0) {
+        fprintf(stderr, "Failed to delete records with empty userName: %s\n", mysql_error(mysql_handle));
+    } else {
+        int affected_rows = mysql_affected_rows(mysql_handle);
+        if (affected_rows > 0) {
+            printf("Successfully deleted %d records with empty userName\n", affected_rows);
+        } else {
+            printf("No records found with empty userName\n");
+        }
+    }
 }
 
 /**服务线程函数

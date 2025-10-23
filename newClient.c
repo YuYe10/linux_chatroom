@@ -6,6 +6,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include "clientLogin.h"
 
 // 全局变量定义
@@ -152,11 +155,23 @@ void start() {
    向服务器发送文件*/
 void filesend(int sockfd, struct Msg msg) {
     FILE *fq;
-    char filename[50];
+    char filename[100];
     
     printf("请输入你要打开的文件名及路径，如~/1.jpg\n");
     fgets(filename, sizeof(filename), stdin);
     filename[strcspn(filename, "\n")] = 0;  // 去除换行符
+    
+    // 提取文件名（不含路径）
+    char *basename = strrchr(filename, '/');
+    if (basename != NULL) {
+        basename++;  // 跳过'/'
+    } else {
+        basename = filename;  // 如果没有路径，直接使用文件名
+    }
+    
+    // 保存文件名到消息结构体
+    strncpy(msg.filename, basename, sizeof(msg.filename) - 1);
+    msg.filename[sizeof(msg.filename) - 1] = '\0';
     
     // 打开文件
     if ((fq = fopen(filename, "rb")) == NULL) {
@@ -164,17 +179,48 @@ void filesend(int sockfd, struct Msg msg) {
         return;
     }
     
+    // 获取文件大小用于进度显示
+    fseek(fq, 0, SEEK_END);
+    long file_size = ftell(fq);
+    fseek(fq, 0, SEEK_SET);
+    
+    printf("开始发送文件: %s (大小: %ld 字节)\n", basename, file_size);
+    
+    size_t total_sent = 0;
+    size_t bytes_read;
+    
     // 分段读取并发送文件
-    while (!feof(fq)) {
-        msg.flen = fread(msg.file, 1, sizeof(msg.file), fq);
-        write(sockfd, &msg, sizeof(msg));
+    while ((bytes_read = fread(msg.file, 1, sizeof(msg.file), fq)) > 0) {
+        msg.flen = bytes_read;
+        ssize_t bytes_written = write(sockfd, &msg, sizeof(msg));
+        
+        if (bytes_written != sizeof(msg)) {
+            printf("发送失败: 网络写入错误\n");
+            fclose(fq);
+            return;
+        }
+        
+        total_sent += bytes_read;
+        
+        // 显示传输进度
+        if (file_size > 0) {
+            int progress = (int)((total_sent * 100) / file_size);
+            printf("\r传输进度: %d%% [%ld/%ld 字节]", progress, total_sent, file_size);
+            fflush(stdout);
+        }
+        
+        // 清空文件缓冲区，避免残留数据
+        memset(msg.file, 0, sizeof(msg.file));
     }
     
     // 发送文件结束标志
     msg.flen = -1;
-    write(sockfd, &msg, sizeof(msg));
-    printf("file send successful.\n");
-    strcpy(msg.file, "");
+    ssize_t bytes_written = write(sockfd, &msg, sizeof(msg));
+    if (bytes_written != sizeof(msg)) {
+        printf("发送结束标志失败\n");
+    } else {
+        printf("\n文件发送成功: %s\n", basename);
+    }
     
     fclose(fq);
 }
@@ -183,8 +229,9 @@ void filesend(int sockfd, struct Msg msg) {
    持续接收服务器消息并处理*/
 void* recv_thread(void* p) {
     struct Msg c_msg;
-    FILE *fp;
+    FILE *fp = NULL;
     int read_rec;
+    size_t total_received = 0;
     
     // 初始化消息结构体
     memset(&c_msg, 0, sizeof(c_msg));
@@ -196,6 +243,10 @@ void* recv_thread(void* p) {
         if (read_rec <= 0) {
             // 连接断开或错误
             printf("与服务器的连接已断开\n");
+            if (fp != NULL) {
+                fclose(fp);
+                fp = NULL;
+            }
             break;
         }
         
@@ -203,27 +254,71 @@ void* recv_thread(void* p) {
             printf("\n%s:%s\n", c_msg.name, c_msg.msg);
             // 移除重复的提示输出，让主循环统一处理提示
         } else if (c_msg.cmd == 4) {  // 文件接收
-            // 创建接收文件
-            if ((fp = fopen("~/Desktop/recived/new.jpg", "a+")) == NULL) {
-                printf("File open failed.\n");
-                break;
-            }
-            
-            printf("\nreceive a file from : %s \n", c_msg.name);
-            
-            // 分段接收文件内容
-            while (1) {
-                if (c_msg.flen == -1) {  // 文件传输结束
-                    break;
-                } else {
-                    fwrite(c_msg.file, 1, c_msg.flen, fp);
-                    read(sockfd, &c_msg, sizeof(c_msg));
+            if (c_msg.flen == -1) {  // 文件传输结束
+                if (fp != NULL) {
+                    fclose(fp);
+                    fp = NULL;
+                    printf("文件接收完成，共接收 %zu 字节\n", total_received);
+                    total_received = 0;
                 }
+                continue;
             }
             
-            printf("receive a file -> ~/Desktop/recived\n");
-            // 移除重复的提示输出，让主循环统一处理提示
-            fclose(fp);
+            // 如果是新文件传输开始
+            if (fp == NULL) {
+                char folder_name[50];
+                char file_path[200];
+                char original_filename[100];
+                
+                // 创建接收文件夹名称：接收者_recived
+                snprintf(folder_name, sizeof(folder_name), "%s_recived", username);
+                
+                // 创建文件夹（如果不存在）
+                if (mkdir(folder_name, 0755) == -1) {
+                    // 文件夹可能已存在，忽略错误
+                }
+                
+                // 使用发送方提供的文件名
+                if (strlen(c_msg.filename) > 0) {
+                    strncpy(original_filename, c_msg.filename, sizeof(original_filename) - 1);
+                    original_filename[sizeof(original_filename) - 1] = '\0';
+                } else {
+                    // 如果发送方没有提供文件名，使用时间戳生成
+                    time_t now = time(NULL);
+                    struct tm *t = localtime(&now);
+                    snprintf(original_filename, sizeof(original_filename), 
+                            "received_file_%04d%02d%02d_%02d%02d%02d", 
+                            t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+                            t->tm_hour, t->tm_min, t->tm_sec);
+                }
+                
+                // 构建完整文件路径
+                snprintf(file_path, sizeof(file_path), "%s/%s", folder_name, original_filename);
+                
+                // 创建接收文件
+                if ((fp = fopen(file_path, "wb")) == NULL) {
+                    printf("文件创建失败: %s\n", file_path);
+                    continue;
+                }
+                
+                printf("\n开始接收来自 %s 的文件: %s\n", c_msg.name, original_filename);
+            }
+            
+            // 写入文件内容
+            if (fp != NULL && c_msg.flen > 0) {
+                size_t bytes_written = fwrite(c_msg.file, 1, c_msg.flen, fp);
+                if (bytes_written != c_msg.flen) {
+                    printf("文件写入错误\n");
+                    fclose(fp);
+                    fp = NULL;
+                    total_received = 0;
+                    continue;
+                }
+                
+                total_received += bytes_written;
+                printf("\r已接收: %zu 字节", total_received);
+                fflush(stdout);
+            }
         } else if (c_msg.cmd == 3) {  // 在线用户列表
             // 这个命令由主循环处理，接收线程忽略
             continue;
@@ -231,6 +326,10 @@ void* recv_thread(void* p) {
         
         // 重置消息结构体，避免残留数据影响
         memset(&c_msg, 0, sizeof(c_msg));
+    }
+    
+    if (fp != NULL) {
+        fclose(fp);
     }
     
     return NULL;

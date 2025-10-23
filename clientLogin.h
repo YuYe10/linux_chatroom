@@ -9,6 +9,7 @@ struct Msg {
     int flen;
     char name[20]; // 用户账号
     char password[20];// 用户密码
+    char filename[100]; // 新增：文件名
     int cmd; // 消息类型
 }; 
 

@@ -14,11 +14,14 @@
 #include "serverLogin.h"
 
 int main() {
-    char* db_pwd = getenv("CHATROOM_DB_PASS");
+    /* char* db_pwd = getenv("CHATROOM_DB_PASS");
     if (db_pwd == NULL) {
         fprintf(stderr, "Database password environment variable not set\n");
         return 1;
     }
-    printf("Database password: %s\n", db_pwd);
-    return 0;
+    printf("Database password: %s\n", db_pwd);*/
+
+    FILE *fp;
+    fp = fopen("~testfile.txt", "a+");
+    return 0; 
 }
