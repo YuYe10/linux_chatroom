@@ -1,0 +1,7 @@
+client
+clientLogin.o
+database.o
+server
+serverLogin.o
+test
+.vscode/
