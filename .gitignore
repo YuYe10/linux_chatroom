@@ -5,4 +5,5 @@ server
 serverLogin.o
 test
 .vscode/
-logs/  # 新增：忽略日志目录
+logs/
+*_received/

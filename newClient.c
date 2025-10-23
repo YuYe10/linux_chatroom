@@ -210,10 +210,10 @@ void* recv_thread(void* p) {
                 char folder_name[50];
                 char file_path[200];
                 char original_filename[100];
-                
-                // 创建接收文件夹名称：接收者_recived
-                snprintf(folder_name, sizeof(folder_name), "%s_recived", username);
-                
+
+                // 创建接收文件夹名称：接收者_received
+                snprintf(folder_name, sizeof(folder_name), "%s_received", username);
+
                 // 创建文件夹（如果不存在）
                 if (mkdir(folder_name, 0755) == -1) {
                     // 文件夹可能已存在，忽略错误
@@ -227,8 +227,8 @@ void* recv_thread(void* p) {
                     // 如果发送方没有提供文件名，使用时间戳生成
                     time_t now = time(NULL);
                     struct tm *t = localtime(&now);
-                    snprintf(original_filename, sizeof(original_filename), 
-                            "received_file_%04d%02d%02d_%02d%02d%02d", 
+                    snprintf(original_filename, sizeof(original_filename),
+                            "received_file_%04d%02d%02d_%02d%02d%02d",
                             t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
                             t->tm_hour, t->tm_min, t->tm_sec);
                 }
