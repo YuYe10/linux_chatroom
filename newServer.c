@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -12,6 +13,7 @@
 #include <fcntl.h>
 #include "database.h"
 #include "serverLogin.h"
+#include "logger.h"  // 新增：包含日志头文件
 
 /**服务器端主程序
    采用多线程机制为多个客户端提供服务*/
@@ -36,12 +38,17 @@ void connect_db();
 /**服务器初始化函数
    创建socket，绑定地址，监听端口，连接数据库*/
 void init() {
+    // 初始化日志系统
+    log_init("server", NULL);
+    LOG_INFO("开始初始化服务器");
+    
     // 创建TCP套接字
     sockfd = socket(PF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
-        perror("创建socket失败");
+        LOG_ERROR("创建socket失败: %s", strerror(errno));
         exit(-1);
     }
+    LOG_DEBUG("TCP套接字创建成功");
     
     // 设置服务器地址信息
     addr.sin_family = PF_INET;
@@ -62,15 +69,18 @@ void init() {
     
     // 连接数据库
     connect_db();
+    LOG_INFO("服务器初始化完成");
 }
 
 /**数据库连接函数
    初始化并连接MySQL数据库，创建必要的表*/
 void connect_db() {
+    LOG_INFO("开始连接数据库");
+    
     // 初始化数据库连接
     mysql_handle = db_initial(mysql_handle);
     if (NULL == mysql_handle) {
-        fprintf(stderr, "%s\n", "initialize failed.");
+        LOG_ERROR("数据库初始化失败");
         exit(1);
     }
     
@@ -131,19 +141,34 @@ void connect_db() {
     table_create(mysql_handle, "chatroom",
                 "create table onlineinfo(userID INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT, userName TEXT, userState TEXT) engine=INNODB auto_increment=1001 default charset=gbk");
     
-    // 删除username为空的记录
+    // 删除usrinfo表中username为空的记录
     char delete_query[1024];
     sprintf(delete_query, "DELETE FROM usrinfo WHERE userName = '' OR userName IS NULL");
     if (mysql_real_query(mysql_handle, delete_query, (unsigned int)strlen(delete_query)) != 0) {
-        fprintf(stderr, "Failed to delete records with empty userName: %s\n", mysql_error(mysql_handle));
+        LOG_ERROR("删除usrinfo表空用户名记录失败: %s", mysql_error(mysql_handle));
     } else {
         int affected_rows = mysql_affected_rows(mysql_handle);
         if (affected_rows > 0) {
-            printf("Successfully deleted %d records with empty userName\n", affected_rows);
+            LOG_INFO("成功删除usrinfo表 %d 条空用户名记录", affected_rows);
         } else {
-            printf("No records found with empty userName\n");
+            LOG_DEBUG("usrinfo表未找到空用户名记录");
         }
     }
+    
+    // 删除onlineinfo表中username为空的记录
+    sprintf(delete_query, "DELETE FROM onlineinfo WHERE userName = '' OR userName IS NULL");
+    if (mysql_real_query(mysql_handle, delete_query, (unsigned int)strlen(delete_query)) != 0) {
+        LOG_ERROR("删除onlineinfo表空用户名记录失败: %s", mysql_error(mysql_handle));
+    } else {
+        int affected_rows = mysql_affected_rows(mysql_handle);
+        if (affected_rows > 0) {
+            LOG_INFO("成功删除onlineinfo表 %d 条空用户名记录", affected_rows);
+        } else {
+            LOG_DEBUG("onlineinfo表未找到空用户名记录");
+        }
+    }
+    
+    LOG_INFO("数据库连接完成");
 }
 
 /**服务线程函数
@@ -151,84 +176,83 @@ void connect_db() {
 void* service_thread(void* p) {
     int fd = *(int*)p;  // 客户端socket文件描述符
     
-    printf("pthread = %d\n", fd);
+    LOG_INFO("创建服务线程，客户端fd=%d", fd);
     
     while (1) {
         // 接收客户端消息
         int ret = read(fd, &msg, sizeof(msg));
         
         if (ret == -1) {
-            perror("read error.");
+            LOG_ERROR("读取客户端消息失败，fd=%d: %s", fd, strerror(errno));
             break;
         } else if (ret == 0) {  // 客户端断开连接
+            LOG_INFO("客户端断开连接，fd=%d，用户名: %s", fd, msg.name);
             // 更新在线状态为离线
             data_delete_online(mysql_handle, msg.name);
             data_insert_online(mysql_handle, msg.name, "offline");
             pthread_exit(0);
             online_count--;  // 在线客户端数量减1
-            break; 
+            break;
         } else if (strcmp(msg.msg, "#service") == 0 && (msg.cmd > 0 && msg.cmd < 7)) {
             // 处理服务命令
             switch (msg.cmd) {
                 case 1:  // 用户注册
+                    LOG_INFO("处理用户注册请求，用户名: %s", msg.name);
                     Reg(fd, msg, mysql_handle);
                     break;
                     
                 case 2:  // 用户登录
+                    LOG_INFO("处理用户登录请求，用户名: %s", msg.name);
                     Entry(fd, msg, mysql_handle);
                     break;
                     
                 case 3:  // 查看在线用户
+                    LOG_DEBUG("处理查看在线用户请求，用户名: %s", msg.name);
                     int len = table_display(mysql_handle, "select * from onlineinfo", msg.online);
                     msg.len = len;
                     write(fd, &msg, sizeof(msg));
                     break;
                     
                 case 4:  // 文件传输
+                    LOG_INFO("开始文件传输，文件名: %s，发送者: %s", msg.filename, msg.name);
                     while (1) {
                         if (msg.flen == -1) {
                             SendMsgToAll(msg, fd);
+                            LOG_INFO("文件传输完成，文件名: %s", msg.filename);
                             break;
                         } else {
                             SendMsgToAll(msg, fd);
                             read(fd, &msg, sizeof(msg));
                         }
                     }
-                    printf("server transmits the file successful.\n");
                     break;
                     
                 case 5:  // 设置在线状态
+                    LOG_DEBUG("设置用户在线状态，用户名: %s", msg.name);
                     data_delete_online(mysql_handle, msg.name);
                     data_insert_online(mysql_handle, msg.name, "online");
                     break;
                     
                 case 6:  // 设置隐身状态
+                    LOG_DEBUG("设置用户隐身状态，用户名: %s", msg.name);
                     data_delete_online(mysql_handle, msg.name);
                     data_insert_online(mysql_handle, msg.name, "offline");
                     break;
             }
         } else if (strcmp(msg.msg, "#service") && strcmp(msg.msg, "") && strcmp(msg.msg, "#clear") && msg.cmd == 0) {
             // 普通聊天消息，广播给所有客户端
+            LOG_DEBUG("广播聊天消息，发送者: %s，内容: %s", msg.name, msg.msg);
             SendMsgToAll(msg, fd);
         }
     }
-}
-
-/**群发消息函数
-   将消息发送给除发送者外的所有在线客户端*/
-void SendMsgToAll(struct Msg msg, int fd) {
-    int i;
-    for (i = 0; i < online_count; i++) {
-        if (fds[i] != fd) {  // 不发送给消息发送者
-            write(fds[i], &msg, sizeof(msg));
-        }
-    }
+    
+    return NULL;
 }
 
 /**主服务函数
    接受客户端连接并创建服务线程*/
 void service() {
-    printf("服务器启动\n");
+    LOG_INFO("服务器启动，开始接受客户端连接");
     
     while (1) {
         struct sockaddr_in fromaddr;
@@ -237,27 +261,31 @@ void service() {
         // 接受客户端连接
         int fd = accept(sockfd, (SA*)&fromaddr, &len);
         if (fd == -1) {
-            printf("客户端连接出错...\n");
+            LOG_ERROR("接受客户端连接失败: %s", strerror(errno));
             continue;
         }
+        
+        LOG_INFO("新客户端连接，fd=%d", fd);
         
         // 寻找空闲位置存储客户端socket
         int i = 0;
         for (i = 0; i < size; i++) {
             if (fds[i] == 0) {
                 fds[i] = fd;  // 记录客户端socket
-                printf("fd = %d\n", fd);
+                LOG_DEBUG("客户端fd=%d存储在位置%d", fd, i);
                 
                 // 创建服务线程
                 pthread_t tid;
                 pthread_create(&tid, 0, service_thread, &fd);
                 pthread_detach(tid);  // 线程分离，自动回收资源
                 online_count++;  // 在线客户端数量加1
+                LOG_INFO("创建服务线程成功，当前在线客户端数: %d", online_count);
                 break;
             }
             
             if (size == i) {
                 // 聊天室已满，拒绝连接
+                LOG_WARNING("聊天室已满，拒绝客户端连接，fd=%d", fd);
                 char* str = "对不起，聊天室已经满了!";
                 send(fd, str, strlen(str), 0);
                 close(fd);
@@ -271,4 +299,24 @@ void service() {
 int main() {
     init();     // 初始化服务器
     service();  // 启动服务
+    
+    // 程序结束时关闭日志系统
+    log_close();
+    return 0;
+}
+
+/**向所有客户端发送消息
+   将消息广播给所有连接的客户端（除了发送者自己）*/
+void SendMsgToAll(struct Msg msg, int fd) {
+    LOG_DEBUG("开始广播消息，发送者fd=%d，消息内容: %s", fd, msg.msg);
+    
+    int i;
+    for (i = 0; i < size; i++) {
+        if (fds[i] != 0 && fds[i] != fd) {  // 不发送给发送者自己
+            LOG_DEBUG("向客户端fd=%d发送消息", fds[i]);
+            write(fds[i], &msg, sizeof(msg));
+        }
+    }
+    
+    LOG_DEBUG("消息广播完成");
 }

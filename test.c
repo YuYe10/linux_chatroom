@@ -22,6 +22,6 @@ int main() {
     printf("Database password: %s\n", db_pwd);*/
 
     FILE *fp;
-    fp = fopen("~testfile.txt", "a+");
-    return 0; 
+    fp = fopen("～/testfile.txt", "a+");
+    return 0;
 }

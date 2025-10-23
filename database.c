@@ -102,7 +102,7 @@ int table_display(MYSQL *con,char *query,char display[100][20])
 		printf("\n");
 	}
 	count = num_row * num_col;
-	printf("===========================================\n\n");
+	printf("===========================================\n");
 	mysql_free_result(mysql_res);
 	return count;
 }
@@ -273,69 +273,3 @@ int data_delete_online(MYSQL *con,char *name)
 	return 1;
 	//table_display(con,"select * from onlineinfo");
 }
-
-/**主函数*/
-/*
-int main(void)
-{
-
-	MYSQL *mysql_handle = NULL;
-	char display[303][20] = {};
-	int m,n;
-	int len = 0;
-	mysql_handle = db_initial(mysql_handle);
-	if(NULL == mysql_handle){
-		fprintf(stderr, "%s\n", "initialize failed.");
-		exit(1);
-	}
-	mysql_handle = db_connect(mysql_handle, "localhost","root","9529346*","chatroom");
-	//db_create(mysql_handle,"create database chatroom");
-	//创建表：ID为主键自增，从1001开始，用户名，密码
-	//table_create(mysql_handle,"chatroom","create table usrinfo(userID INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT, userName TEXT,userPWD TEXT)engine=INNODB auto_increment=1001 default charset=gbk");
-	//创建表：ID为主键自增，从1001开始，用户名，在线状态
-	//table_create(mysql_handle,"chatroom","create table onlineinfo(userID INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT, userName TEXT,userState TEXT)engine=INNODB auto_increment=1001 default charset=gbk");
-	
-	data_insert(mysql_handle,"kira","123456");
-	data_insert(mysql_handle,"lele","123456");
-	data_insert(mysql_handle,"yuer","123456");
-	if(data_judge(mysql_handle,"kira","1234")){
-		printf("name & pwd correct.\n");
-	}else{
-		printf("wrong.\n");
-	}
-	data_delete(mysql_handle,"kira");
-	data_delete(mysql_handle,"lele");
-	table_display(mysql_handle,"select * from usrinfo",display);
-
-	data_insert_online(mysql_handle,"yuer","online");
-	data_insert_online(mysql_handle,"kira","offline");
-	data_insert_online(mysql_handle,"lele","online");
-	table_display(mysql_handle,"select * from onlineinfo",display);
-
-	data_delete_online(mysql_handle,"kira");
-	data_delete_online(mysql_handle,"yuer");
-	data_delete_online(mysql_handle,"lele");
-	table_display(mysql_handle,"select * from onlineinfo",display);
-
-	//客户端需要的在线人员打印输出
-	//需要的关键：全长len，存放数据的数组display
-	len = table_display(mysql_handle,"select * from usrinfo",display);
-	
-	for(m = 0; m < 3; m++)
-	{
-		printf(" %-10s ",display[m]);
-	}
-	for(m = 3; m < len+3 ; m++)
-	{
-		if(m%3==0)
-			printf("\n");
-		printf("  %-10s ",display[m]);
-	}
-	printf("\n");
-	
-
-	mysql_close(mysql_handle);
-	mysql_library_end();
-	return 0;
-}
-*/

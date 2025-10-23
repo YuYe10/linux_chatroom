@@ -22,20 +22,20 @@ void Reg(int client_socket, struct Msg msg,MYSQL *con) {
         msg.cmd = -1; //数据库中已有该账号
     }
     write (client_socket, &msg, sizeof(msg));
-} 
-//登录账号 
+}
+//登录账号
 void Entry(int client_socket, struct Msg msg,MYSQL *con)
 {
-    //检测数据库中name correct?pwd correct?
+    //检测数据库中是否有该账号且密码是否正确
     if(!data_judge(con,msg.name,msg.password)){
-        //login error
-        msg.cmd = -1; 
+        //登录失败
+        msg.cmd = -1;
     }else{
         data_delete_online(con,msg.name);
         data_insert_online(con,msg.name,"online");
         msg.cmd = 1002;
-        //enter the chatroom
-    } 
+        //进入聊天室
+    }
     write (client_socket, &msg, sizeof(msg));
 }
 

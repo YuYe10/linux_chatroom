@@ -5,13 +5,13 @@ struct Msg {
     char online[303][20];//打印 在线用户用
     int len;//打印 在线用户用
     char msg[1024]; // 消息内容
-    char file[MAXLINE]; // wenjian内容
+    char file[MAXLINE]; // 文件内容
     int flen;
     char name[20]; // 用户账号
     char password[20];// 用户密码
-    char filename[100]; // 新增：文件名
+    char filename[100]; // 文件名
     int cmd; // 消息类型
-}; 
+};
 
 void Interface();
 //用户注册

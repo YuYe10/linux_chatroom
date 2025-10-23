@@ -13,10 +13,10 @@
 struct Msg msg;
 
 void Interface() {
-	printf("====#     MENU    #===\n");
-	printf ("\t1. 注册\n");
-	printf ("\t2. 登录\n");
-	printf("====#             #===\n");
+	printf("===     选项    ===\n");
+	printf ("     1. 注册\n");
+	printf ("     2. 登录\n");
+	printf("===            ===\n");
 }
 
 /**用户注册
@@ -33,12 +33,12 @@ void Reg(int sockfd)
 	
 	strcpy(msg.msg,"#service");
 
-	printf("==UserName==:");
+	printf("用户名:");
 	scanf("%s",name);
 	while(getchar()!='\n');
 	strcpy(msg.name,name);
-	
-	printf("==PassWord==:");
+
+	printf("密码:");
 	scanf("%s",password);
 	while(getchar()!='\n');
 	strcpy(msg.password,password);
@@ -73,12 +73,12 @@ void Entry(int sockfd)
 	
 	strcpy(msg.msg,"#service");
 
-	printf("==UserName==:");
+	printf("用户名:");
 	scanf("%s",name);
 	while(getchar()!='\n');
 	strcpy(msg.name,name);
 	
-	printf("==PassWord==:");
+	printf("密码:");
 	scanf("%s",password);
     while(getchar()!='\n');
 	strcpy(msg.password,password);
