@@ -111,7 +111,7 @@ function MonitorLoop
             set mem "N/A"
         else
             # 记录监控时间到日志文件
-            date +"%Y-%m-%d %H:%M:%S" >> server.log
+            date +"%Y-%m-%d %H:%M:%S" >> server_performance.log
             
             # 定义获取进程CPU使用率的内部函数
             function GetCpu
