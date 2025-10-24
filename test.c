@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "database.h"
-#include "serverLogin.h"
+#include "server_login.h"
 
 int main() {
     /* char* db_pwd = getenv("CHATROOM_DB_PASS");

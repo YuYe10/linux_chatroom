@@ -1,8 +1,8 @@
 client
-clientLogin.o
+client_login.o
 database.o
 server
-serverLogin.o
+server_login.o
 test
 .vscode/
 logs/

@@ -29,13 +29,13 @@ MENU_LIBS := -lmenu                           # 菜单库
 # -----------------------------------------------------------------------------
 # 源文件与目标文件配置
 # -----------------------------------------------------------------------------
-SERVER_OBJS := serverLogin.o database.o logger.o      # 服务器端目标文件：
-                                              # serverLogin.o: 服务器登录模块
+SERVER_OBJS := server_login.o database.o logger.o      # 服务器端目标文件：
+                                              # server_login.o: 服务器登录模块
                                               # database.o: 数据库操作模块
                                               # logger.o: 日志模块（新增）
 
-CLIENT_OBJS := clientLogin.o logger.o        # 客户端目标文件：
-                                              # clientLogin.o: 客户端登录模块
+CLIENT_OBJS := client_login.o logger.o        # 客户端目标文件：
+                                              # client_login.o: 客户端登录模块
                                               # logger.o: 日志模块（新增）
 
 # -----------------------------------------------------------------------------
@@ -52,19 +52,19 @@ all: server client
 
 # -----------------------------------------------------------------------------
 # 服务器编译规则
-# 依赖：newServer.c源文件和所有服务器目标文件
+# 依赖：server.c源文件和所有服务器目标文件
 # 生成：server可执行文件
 # -----------------------------------------------------------------------------
-server: newServer.c $(SERVER_OBJS)
-	$(CC) $(CFLAGS) newServer.c $(SERVER_OBJS) -o server $(SERVER_LDFLAGS)
+server: server.c $(SERVER_OBJS)
+	$(CC) $(CFLAGS) server.c $(SERVER_OBJS) -o server $(SERVER_LDFLAGS)
 
 # -----------------------------------------------------------------------------
 # 客户端编译规则
-# 依赖：newClient.c源文件和所有客户端目标文件
+# 依赖：client.c源文件和所有客户端目标文件
 # 生成：client可执行文件
 # -----------------------------------------------------------------------------
-client: newClient.c $(CLIENT_OBJS)
-	$(CC) $(CFLAGS) newClient.c $(CLIENT_OBJS) -o client $(CLIENT_LDFLAGS) $(NCURSE_LIBS) $(MENU_LIBS)
+client: client.c $(CLIENT_OBJS)
+	$(CC) $(CFLAGS) client.c $(CLIENT_OBJS) -o client $(CLIENT_LDFLAGS) $(NCURSE_LIBS) $(MENU_LIBS)
 
 # -----------------------------------------------------------------------------
 # 日志模块编译规则
@@ -76,19 +76,19 @@ logger.o: logger.c logger.h
 
 # -----------------------------------------------------------------------------
 # 服务器登录模块编译规则
-# 依赖：serverLogin.c源文件和对应的头文件
-# 生成：serverLogin.o目标文件
+# 依赖：server_login.c源文件和对应的头文件
+# 生成：server_login.o目标文件
 # -----------------------------------------------------------------------------
-serverLogin.o: serverLogin.c serverLogin.h database.h
-	$(CC) $(CFLAGS) -c serverLogin.c -o serverLogin.o
+server_login.o: server_login.c server_login.h database.h
+	$(CC) $(CFLAGS) -c server_login.c -o server_login.o
 
 # -----------------------------------------------------------------------------
 # 客户端登录模块编译规则
-# 依赖：clientLogin.c源文件和对应的头文件
-# 生成：clientLogin.o目标文件
+# 依赖：client_login.c源文件和对应的头文件
+# 生成：client_login.o目标文件
 # -----------------------------------------------------------------------------
-clientLogin.o: clientLogin.c clientLogin.h
-	$(CC) $(CFLAGS) -c clientLogin.c -o clientLogin.o
+client_login.o: client_login.c client_login.h
+	$(CC) $(CFLAGS) -c client_login.c -o client_login.o
 
 # -----------------------------------------------------------------------------
 # 数据库模块编译规则

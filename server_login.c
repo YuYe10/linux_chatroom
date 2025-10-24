@@ -10,7 +10,7 @@
 #include <fcntl.h>
 #include <mysql/mysql.h>
 #include "database.h"
-#include "serverLogin.h"
+#include "server_login.h"
 //用户注册
 void Reg(int client_socket, struct Msg msg,MYSQL *con) {
     printf ("%s 进行注册\n", msg.name);
