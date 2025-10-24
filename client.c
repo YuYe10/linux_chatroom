@@ -21,7 +21,7 @@ char* IP = "127.0.0.1";       // 服务器IP地址
 short PORT = 10222;            // 服务器端口号
 typedef struct sockaddr SA;    // 套接字地址结构体别名
 char username[20];            // 当前用户名
-volatile sig_atomic_t exit_flag = 0;  // 新增：退出标志
+volatile sig_atomic_t exit_flag = 0;  // 退出标志
 
 // 函数声明
 void service_menu();
@@ -282,7 +282,7 @@ void* recv_thread(void* p) {
 }
 
 /**信号处理函数
-   处理Ctrl+C信号，优雅退出*/
+   处理Ctrl+C信号，退出*/
 void signal_handler(int sig) {
     if (sig == SIGINT) {
         LOG_INFO("收到Ctrl+C信号，开始退出");
@@ -290,7 +290,7 @@ void signal_handler(int sig) {
     }
 }
 
-/**优雅退出函数
+/**退出函数
    发送退出消息并关闭连接*/
 void graceful_exit() {
     struct Msg exit_msg;
