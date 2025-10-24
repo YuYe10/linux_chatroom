@@ -25,7 +25,7 @@ void Interface() {
 	密码：输入
 	操作类型cmd：1.注册
 	
-	返回类型：改动过的msg.cmd 1002（成功） -1（失败）*/
+	msg.cmd 1002（成功） -1（失败）*/
 void Reg(int sockfd)
 {
 	char name[20];
@@ -65,7 +65,7 @@ void Reg(int sockfd)
 	密码：输入
 	操作类型cmd：2.登录
 	
-	返回类型：改动过的msg.cmd 1001（成功） -1（失败）*/
+	msg.cmd 1001（成功） -1（失败）*/
 void Entry(int sockfd)
 {
 	char name[20];
