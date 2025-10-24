@@ -13,7 +13,7 @@
 #include <fcntl.h>
 #include "database.h"
 #include "server_login.h"
-#include "logger.h"  // 新增：包含日志头文件
+#include "logger.h"  // 包含日志头文件
 
 /**服务器端主程序
    采用多线程机制为多个客户端提供服务*/
