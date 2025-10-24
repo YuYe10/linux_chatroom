@@ -1,3 +1,9 @@
+/**
+ * @file server.c
+ * @brief 聊天室服务器主程序
+ * @details 采用多线程机制为多个客户端提供服务，支持用户注册、登录、聊天、文件传输等功能
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -35,8 +41,10 @@ struct sockaddr_in addr;       // 套接字地址结构
 void SendMsgToAll(struct Msg msg, int fd);
 void connect_db();
 
-/**服务器初始化函数
-   创建socket，绑定地址，监听端口，连接数据库*/
+/**
+ * @brief 服务器初始化函数
+ * @details 创建socket，绑定地址，监听端口，连接数据库
+ */
 void init() {
     // 初始化日志系统
     log_init("server", NULL);
@@ -72,8 +80,10 @@ void init() {
     LOG_INFO("服务器初始化完成");
 }
 
-/**数据库连接函数
-   初始化并连接MySQL数据库，创建必要的表*/
+/**
+ * @brief 数据库连接函数
+ * @details 初始化并连接MySQL数据库，创建必要的表
+ */
 void connect_db() {
     LOG_INFO("开始连接数据库");
     
@@ -90,6 +100,7 @@ void connect_db() {
         fprintf(stderr, "Database password environment variable not set\n");
         exit(1);
     }
+    
     // 先连接到MySQL服务器（不指定数据库）
     MYSQL *temp_conn = mysql_real_connect(mysql_handle, "localhost", "root", db_pwd, NULL, 3306, NULL, 0);
     if (temp_conn == NULL) {
@@ -171,8 +182,12 @@ void connect_db() {
     LOG_INFO("数据库连接完成");
 }
 
-/**服务线程函数
-   为每个客户端连接创建独立的服务线程*/
+/**
+ * @brief 服务线程函数
+ * @param p 指向客户端socket文件描述符的指针
+ * @return NULL
+ * @details 为每个客户端连接创建独立的服务线程，处理客户端请求
+ */
 void* service_thread(void* p) {
     int fd = *(int*)p;  // 客户端socket文件描述符
     
@@ -249,8 +264,10 @@ void* service_thread(void* p) {
     return NULL;
 }
 
-/**主服务函数
-   接受客户端连接并创建服务线程*/
+/**
+ * @brief 主服务函数
+ * @details 接受客户端连接并创建服务线程
+ */
 void service() {
     LOG_INFO("服务器启动，开始接受客户端连接");
     
@@ -294,8 +311,11 @@ void service() {
     }
 }
 
-/**主函数
-   程序入口点*/
+/**
+ * @brief 主函数
+ * @return 程序退出状态
+ * @details 程序入口点
+ */
 int main() {
     init();     // 初始化服务器
     service();  // 启动服务
@@ -305,8 +325,12 @@ int main() {
     return 0;
 }
 
-/**向所有客户端发送消息
-   将消息广播给所有连接的客户端（除了发送者自己）*/
+/**
+ * @brief 向所有客户端发送消息
+ * @param msg 要发送的消息结构体
+ * @param fd 发送者的socket文件描述符
+ * @details 将消息广播给所有连接的客户端（除了发送者自己）
+ */
 void SendMsgToAll(struct Msg msg, int fd) {
     LOG_DEBUG("开始广播消息，发送者fd=%d，消息内容: %s", fd, msg.msg);
     
