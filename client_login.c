@@ -68,7 +68,7 @@ void Reg(int sockfd)
     printf("msg.cmd = %d\n", msg.cmd);  ///< 打印服务器响应码
 
     if(msg.cmd==1001){  ///< 注册成功
-        printf("Login success!waiting...\n");
+        printf("Register success!waiting...\n");
     }
     else if(msg.cmd==-1){  ///< 注册失败（用户名已被使用）
         printf("the UserName has been used.\n");
