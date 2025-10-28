@@ -2,8 +2,6 @@
  * @file client_login.h
  * @brief 客户端登录认证模块头文件
  * @details 定义客户端与服务器通信的消息结构体和函数声明
- * @version 1.0
- * @date 2025-10-24
  */
 
 #include <stdio.h>

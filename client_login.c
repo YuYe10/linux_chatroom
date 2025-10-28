@@ -2,8 +2,6 @@
  * @file client_login.c
  * @brief 客户端登录认证模块实现文件
  * @details 实现用户注册、登录及与服务器认证交互功能
- * @version 1.0
- * @date 2025-10-24
  */
 
 #include <sys/types.h>

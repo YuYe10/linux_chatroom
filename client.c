@@ -2,8 +2,6 @@
  * @file client.c
  * @brief 聊天室客户端主程序
  * @details 实现客户端网络通信、消息收发、文件传输等核心功能
- * @version 1.0
- * @date 2025-10-24
  */
 
 #include <stdio.h>
@@ -92,7 +90,7 @@ void init() {
  * @brief 文件发送函数
  * @param sockfd 客户端socket文件描述符
  * @param msg 消息结构体（用于传输文件信息）
- * @details 
+ * @details
  * - 获取用户输入的文件路径
  * - 提取文件名并计算文件大小
  * - 分段读取文件内容并发送
